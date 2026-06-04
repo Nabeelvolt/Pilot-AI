@@ -11,11 +11,25 @@ def extract_pdf_pages(pdf_path: str) -> List[Dict]:
     """
     Returns a list of dicts: [{ page_number: int, text: str }, ...]
     Skips pages with less than 50 characters (blank/image pages).
-    Uses pdfplumber first; falls back to PyMuPDF if pdfplumber fails.
+    Uses PyMuPDF first; falls back to pdfplumber if PyMuPDF fails.
     """
     pages = []
 
-    # ── Primary: pdfplumber ────────────────────────────────────────────────────
+    # ── Primary: PyMuPDF (Fast & Memory Efficient) ──────────────────────
+    try:
+        import fitz  # PyMuPDF
+        doc = fitz.open(pdf_path)
+        for i, page in enumerate(doc):
+            text = page.get_text("text").strip()
+            if len(text) >= 50:
+                pages.append({"page_number": i + 1, "text": text})
+        doc.close()
+        if pages:
+            return pages
+    except Exception as e:
+        logger.warning(f"PyMuPDF failed ({e}), trying pdfplumber fallback")
+
+    # ── Fallback: pdfplumber (Memory Heavy) ─────────────────────────────
     try:
         import pdfplumber
         with pdfplumber.open(pdf_path) as pdf:
@@ -32,21 +46,7 @@ def extract_pdf_pages(pdf_path: str) -> List[Dict]:
                 text = text.strip()
                 if len(text) >= 50:
                     pages.append({"page_number": i + 1, "text": text})
-        if pages:
-            return pages
-    except Exception as e:
-        logger.warning(f"pdfplumber failed ({e}), trying PyMuPDF")
-
-    # ── Fallback: PyMuPDF ──────────────────────────────────────────────────────
-    try:
-        import fitz  # PyMuPDF
-        doc = fitz.open(pdf_path)
-        for i, page in enumerate(doc):
-            text = page.get_text("text").strip()
-            if len(text) >= 50:
-                pages.append({"page_number": i + 1, "text": text})
-        doc.close()
         return pages
     except Exception as e:
-        logger.error(f"PyMuPDF also failed: {e}")
+        logger.error(f"pdfplumber also failed: {e}")
         return []
