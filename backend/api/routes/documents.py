@@ -47,6 +47,8 @@ async def upload_document(
             metadata=metadata,
             pdf_bytes=pdf_bytes,
         )
+        if result.status == "error":
+            raise HTTPException(status_code=500, detail=f"Ingestion failed: {result.errors[0]}")
         return result
     finally:
         os.unlink(tmp_path)
