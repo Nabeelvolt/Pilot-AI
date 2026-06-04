@@ -69,7 +69,7 @@ export default function Documents() {
           </div>
           <div>
             <span className="text-sm text-slate-500 mr-2">Embedding Model:</span>
-            <Badge variant="info">{health?.embedding_model || 'Loading...'}</Badge>
+            <Badge variant="info">{health?.embedding_service || 'Loading...'}</Badge>
           </div>
         </div>
 
