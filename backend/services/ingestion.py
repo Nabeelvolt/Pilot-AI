@@ -72,7 +72,18 @@ def ingest_document(
         texts = [c["text"] for c in chunks]
         embeddings = embed_texts(texts, batch_size=32)
 
-        # ── Step 5: Upsert into Supabase pgvector ───────────────────────────────
+        # ── Step 5: Record document in Supabase PostgreSQL FIRST ────────────────
+        supabase.table("documents").upsert({
+            "doc_id":         doc_id,
+            "filename":       filename,
+            "document_title": metadata.document_title,
+            "doc_type":       metadata.doc_type,
+            "lpa_code":       metadata.lpa_code,
+            "chunk_count":    len(chunks),
+            "status":         "indexing",
+        }).execute()
+
+        # ── Step 6: Upsert chunks into Supabase pgvector ────────────────────────
         UPSERT_BATCH = 100
         for i in range(0, len(chunks), UPSERT_BATCH):
             batch_chunks = chunks[i : i + UPSERT_BATCH]
@@ -98,16 +109,8 @@ def ingest_document(
             supabase.table("policy_chunks").upsert(rows).execute()
             logger.info(f"Upserted batch {i//UPSERT_BATCH + 1} into Supabase pgvector")
 
-        # ── Step 6: Record document in Supabase PostgreSQL ──────────────────────
-        supabase.table("documents").upsert({
-            "doc_id":         doc_id,
-            "filename":       filename,
-            "document_title": metadata.document_title,
-            "doc_type":       metadata.doc_type,
-            "lpa_code":       metadata.lpa_code,
-            "chunk_count":    len(chunks),
-            "status":         "indexed",
-        }).execute()
+        # Update status to indexed
+        supabase.table("documents").update({"status": "indexed"}).eq("doc_id", doc_id).execute()
 
         logger.info(f"Ingestion complete: {len(chunks)} chunks for '{metadata.document_title}'")
         return IngestionResult(
