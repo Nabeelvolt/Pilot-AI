@@ -19,7 +19,7 @@ export default function Sidebar() {
           PILOT-AI
         </h1>
         <span className="bg-brand-teal text-white text-xs px-2 py-0.5 rounded font-medium">
-          DEMO v0.1-free
+          DEMO v0.2-free
         </span>
       </div>
       
