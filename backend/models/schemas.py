@@ -14,6 +14,7 @@ class IngestionResult(BaseModel):
     errors: List[str] = []
 
 class AnalysisRequest(BaseModel):
+    analysis_id: Optional[str] = None
     application_ref: Optional[str] = None
     site_address: Optional[str] = None
     application_type: str
