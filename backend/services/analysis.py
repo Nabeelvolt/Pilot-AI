@@ -149,7 +149,7 @@ def analyse_application(request: AnalysisRequest) -> AnalysisResponse:
     5. Save to SQLite
     6. Return AnalysisResponse
     """
-    analysis_id = str(uuid.uuid4())
+    analysis_id = request.analysis_id if request.analysis_id else str(uuid.uuid4())
     started_at = datetime.utcnow()
 
     # ── Step 1: Retrieve relevant policy chunks ─────────────────────────────────
@@ -229,6 +229,43 @@ Analyse this application against the policy context above and return the JSON re
         "overall_confidence":        parsed.get("overall_confidence", 0.0),
         "processing_time_seconds":   processing_seconds,
     }).execute()
+
+    # ── Step 5.5: Run Document Validation ───────────────────────────────────────
+    try:
+        from services.document_analyser import run_validation_check, assess_document
+        
+        # Get uploaded docs
+        docs_res = supabase.table("application_documents").select("*").eq("analysis_id", analysis_id).execute()
+        uploaded_docs = docs_res.data or []
+        
+        if uploaded_docs:
+            for doc in uploaded_docs:
+                if doc.get("extracted_text") and doc.get("upload_status") != "analysed":
+                    assessment = assess_document(doc["extracted_text"], doc["document_category"])
+                    supabase.table("document_assessments").insert({
+                        "assessment_id": str(uuid.uuid4()),
+                        "analysis_id": analysis_id,
+                        "application_doc_id": doc["application_doc_id"],
+                        "document_category": doc["document_category"],
+                        "overall_adequacy": assessment.get("overall_adequacy", "CANNOT_ASSESS"),
+                        "adequacy_score": assessment.get("adequacy_score", 0.0),
+                        "sections_present": assessment.get("sections_present", []),
+                        "sections_missing": assessment.get("sections_missing", []),
+                        "policy_conflicts": assessment.get("policy_conflicts", []),
+                        "recommendations": assessment.get("recommendations", []),
+                    }).execute()
+                    supabase.table("application_documents").update({"upload_status": "analysed"}).eq("application_doc_id", doc["application_doc_id"]).execute()
+            
+            uploaded_categories = [d["document_category"] for d in uploaded_docs]
+            validation = run_validation_check(
+                analysis_id=analysis_id,
+                application_type=request.application_type,
+                uploaded_document_categories=uploaded_categories,
+                site_constraints=request.site_constraints or [],
+            )
+            supabase.table("validation_results").upsert(validation).execute()
+    except Exception as e:
+        logger.error(f"Failed to run document validation: {e}")
 
     # ── Step 6: Return ──────────────────────────────────────────────────────────
     return AnalysisResponse(
