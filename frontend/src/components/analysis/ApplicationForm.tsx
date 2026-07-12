@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { AnalysisRequest } from '@/lib/types';
+import { API_BASE } from '@/lib/api';
 
 interface Props {
   onSubmit: (data: AnalysisRequest) => void;
@@ -41,7 +42,7 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
     }
     setIsDetecting(true);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/applications/detect-constraints?address=${encodeURIComponent(address)}`);
+      const res = await fetch(`${API_BASE}/applications/detect-constraints?address=${encodeURIComponent(address)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.suggested_checkboxes) {
@@ -89,7 +90,7 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
         
         formData.append('doc_category', docCategory);
 
-        const res = await fetch('http://127.0.0.1:8000/api/document-analysis/upload', {
+        const res = await fetch(`${API_BASE}/document-analysis/upload`, {
           method: 'POST',
           body: formData,
         });

@@ -1,7 +1,7 @@
 import { AnalysisRequest, AnalysisResponse, DocumentRecord, AnalysisHistoryRecord } from './types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-const API_BASE = `${BASE_URL}/api`;
+export const API_BASE = `${BASE_URL}/api`;
 
 export async function checkHealth() {
   const res = await fetch(`${API_BASE}/health`);
