@@ -256,14 +256,14 @@ Analyse this application against the policy context above and return the JSON re
                     }).execute()
                     supabase.table("application_documents").update({"upload_status": "analysed"}).eq("application_doc_id", doc["application_doc_id"]).execute()
             
-            uploaded_categories = [d["document_category"] for d in uploaded_docs]
-            validation = run_validation_check(
-                analysis_id=analysis_id,
-                application_type=request.application_type,
-                uploaded_document_categories=uploaded_categories,
-                site_constraints=request.site_constraints or [],
-            )
-            supabase.table("validation_results").upsert(validation).execute()
+        uploaded_categories = [d["document_category"] for d in uploaded_docs]
+        validation = run_validation_check(
+            analysis_id=analysis_id,
+            application_type=request.application_type,
+            uploaded_document_categories=uploaded_categories,
+            site_constraints=request.site_constraints or [],
+        )
+        supabase.table("validation_results").upsert(validation).execute()
     except Exception as e:
         logger.error(f"Failed to run document validation: {e}")
 

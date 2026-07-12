@@ -48,7 +48,10 @@ export default function DocumentAdequacyPanel({ analysisId, applicationType, sit
         const res = await fetch(`${API_BASE}/document-analysis/${analysisId}`);
         if (res.ok) {
           const data = await res.json();
-          setValidationResult(data.validation_results);
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          setValidationResult(data.validation);
           setAssessments(data.assessments || []);
         } else {
           // If the get endpoint doesn't exist yet, we might need to call validate?
