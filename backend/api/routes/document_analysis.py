@@ -157,22 +157,26 @@ async def run_validation(
 @router.get("/{analysis_id}")
 async def get_document_assessments(analysis_id: str):
     """Get all document uploads and assessments for an analysis."""
-    supabase = get_supabase()
+    try:
+        supabase = get_supabase()
 
-    docs = supabase.table("application_documents").select("*").eq(
-        "analysis_id", analysis_id
-    ).execute()
+        docs = supabase.table("application_documents").select("*").eq(
+            "analysis_id", analysis_id
+        ).execute()
 
-    assessments = supabase.table("document_assessments").select("*").eq(
-        "analysis_id", analysis_id
-    ).execute()
+        assessments = supabase.table("document_assessments").select("*").eq(
+            "analysis_id", analysis_id
+        ).execute()
 
-    validation = supabase.table("validation_results").select("*").eq(
-        "analysis_id", analysis_id
-    ).order("created_at", desc=True).limit(1).execute()
+        validation = supabase.table("validation_results").select("*").eq(
+            "analysis_id", analysis_id
+        ).order("created_at", desc=True).limit(1).execute()
 
-    return {
-        "documents": docs.data or [],
-        "assessments": assessments.data or [],
-        "validation": validation.data[0] if validation.data else None,
-    }
+        return {
+            "documents": docs.data or [],
+            "assessments": assessments.data or [],
+            "validation": validation.data[0] if validation.data else None,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
