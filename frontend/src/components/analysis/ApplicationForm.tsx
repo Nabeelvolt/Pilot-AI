@@ -63,8 +63,7 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const processFiles = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
@@ -87,6 +86,8 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
         else if (nameLower.includes('design') || nameLower.includes('das')) docCategory = 'Design & Access Statement';
         else if (nameLower.includes('heritage')) docCategory = 'Heritage Statement';
         else if (nameLower.includes('flood') || nameLower.includes('fra')) docCategory = 'Flood Risk Assessment';
+        else if (nameLower.includes('energy')) docCategory = 'Energy Statement';
+        else if (nameLower.includes('biodiversity') || nameLower.includes('bng')) docCategory = 'Biodiversity Net Gain Assessment';
         
         formData.append('doc_category', docCategory);
 
@@ -106,8 +107,21 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
       setUploadError('Failed to upload some documents.');
     } finally {
       setIsUploading(false);
-      if (e.target) e.target.value = ''; // Reset input
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    processFiles(e.target.files);
+    if (e.target) e.target.value = ''; // Reset input
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    processFiles(e.dataTransfer.files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -224,7 +238,11 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
           <label className="block text-sm font-bold text-slate-800 mb-2">Upload Document Bundle (PDFs)</label>
           <p className="text-xs text-slate-500 mb-4">Upload PDFs for validation checking and policy assessment. They will be linked to this analysis.</p>
           <div className="flex items-center justify-center w-full">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-slate-50">
+              <label 
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-slate-50"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+              >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <svg className="w-8 h-8 mb-3 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                           <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
