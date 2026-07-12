@@ -89,7 +89,7 @@ export default function ApplicationForm({ onSubmit, disabled }: Props) {
         else if (nameLower.includes('energy')) docCategory = 'Energy Statement';
         else if (nameLower.includes('biodiversity') || nameLower.includes('bng')) docCategory = 'Biodiversity Net Gain Assessment';
         
-        formData.append('doc_category', docCategory);
+        formData.append('document_category', docCategory);
 
         const res = await fetch(`${API_BASE}/document-analysis/upload`, {
           method: 'POST',
