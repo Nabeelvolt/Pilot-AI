@@ -15,8 +15,14 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Auto-seed on first run
-    run_seed_if_empty()
+    # Auto-seed on first run — must never block app startup
+    try:
+        run_seed_if_empty()
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Startup seeding failed (continuing without seed). "
+            "Check SUPABASE_URL / SUPABASE_SERVICE_KEY."
+        )
     yield
 
 app = FastAPI(
