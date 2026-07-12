@@ -5,6 +5,7 @@ import ApplicationForm from '@/components/analysis/ApplicationForm';
 import ProgressSteps from '@/components/analysis/ProgressSteps';
 import AnalysisResult from '@/components/analysis/AnalysisResult';
 import CitationPanel from '@/components/analysis/CitationPanel';
+import DocumentAdequacyPanel from '@/components/analysis/DocumentAdequacyPanel';
 import { analyseApplication } from '@/lib/api';
 import { AnalysisRequest, AnalysisResponse } from '@/lib/types';
 
@@ -13,6 +14,8 @@ export default function AnalysePage() {
   const [result, setResult] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeCitationId, setActiveCitationId] = useState<string | null>(null);
+  const [resultsTab, setResultsTab] = useState<'compliance' | 'documents'>('compliance');
+  const [formData, setFormData] = useState<AnalysisRequest | null>(null);
 
   // Handle escape key to close citation panel
   useEffect(() => {
@@ -28,6 +31,8 @@ export default function AnalysePage() {
     setResult(null);
     setError(null);
     setActiveCitationId(null);
+    setFormData(data);
+    setResultsTab('compliance');
 
     try {
       const res = await analyseApplication(data);
@@ -61,20 +66,58 @@ export default function AnalysePage() {
             <ProgressSteps />
           )}
 
-          {result && !isAnalysing && (
+          {result && !isAnalysing && formData && (
             <>
               <div className="flex justify-between items-center mb-4 print:hidden">
                 <button 
-                  onClick={() => setResult(null)}
+                  onClick={() => {
+                    setResult(null);
+                    setFormData(null);
+                  }}
                   className="text-brand-sky hover:text-brand-navy font-medium text-sm flex items-center gap-1 transition-colors"
                 >
                   &larr; Start New Analysis
                 </button>
               </div>
-              <AnalysisResult 
-                result={result} 
-                onViewCitation={setActiveCitationId} 
-              />
+              
+              <div>
+                {/* Results tab bar */}
+                <div className="flex border-b border-gray-200 mb-6">
+                  {[
+                    { key: 'compliance', label: '📋 Policy Compliance' },
+                    { key: 'documents', label: '📄 Document Adequacy & Validation' },
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setResultsTab(tab.key as 'compliance' | 'documents')}
+                      className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        resultsTab === tab.key
+                          ? 'border-brand-teal text-brand-teal'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Policy Compliance tab — existing component, untouched */}
+                {resultsTab === 'compliance' && (
+                  <AnalysisResult 
+                    result={result} 
+                    onViewCitation={setActiveCitationId} 
+                  />
+                )}
+
+                {/* Document Adequacy tab — new component */}
+                {resultsTab === 'documents' && (
+                  <DocumentAdequacyPanel
+                    analysisId={formData.analysis_id || result.analysis_id}
+                    applicationType={formData.application_type}
+                    siteConstraints={formData.site_constraints || []}
+                  />
+                )}
+              </div>
             </>
           )}
 

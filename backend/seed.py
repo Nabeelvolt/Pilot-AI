@@ -129,4 +129,14 @@ def run_seed_if_empty():
         supabase.table("analyses").upsert(DEMO_ANALYSES).execute()
         logger.info("Demo analysis history seeded.")
 
+    # Call real policy ingestion
+    import asyncio
+    from data.ingest_real_policies import ingest_all_real_policies
+    try:
+        logger.info("Starting ingestion of real Central Lincolnshire policies...")
+        asyncio.run(ingest_all_real_policies())
+        logger.info("Real policies ingested successfully.")
+    except Exception as e:
+        logger.error(f"Failed to ingest real policies: {e}")
+
     logger.info("=== Seeding complete. System ready. ===")

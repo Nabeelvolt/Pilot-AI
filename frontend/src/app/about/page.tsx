@@ -8,6 +8,37 @@ export default function About() {
       
       <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full space-y-8">
         
+        {/* v0.2 update notice */}
+        <div className="bg-brand-teal text-white rounded-xl p-6 mb-8 shadow-sm">
+          <h2 className="text-xl font-bold mb-3">
+            🆕 What&apos;s New in v0.2 — Following Your Feedback
+          </h2>
+          <p className="text-sm text-teal-100 mb-4">
+            Following our focus group session on 25 June 2026 with senior planning
+            officers from Central Lincolnshire Local Planning Authorities, PILOT-AI
+            v0.2 introduces:
+          </p>
+          <ul className="space-y-2">
+            {[
+              'Document bundle upload — upload the actual PDFs submitted with an application',
+              'Content adequacy checking — AI reviews whether each document meets policy requirements, not just whether it is present',
+              'Automatic constraint detection — enter a postcode and the system detects flood zones, listed buildings, Article 4 Directions, and conservation areas using Environment Agency and MHCLG open data',
+              'Validation checklist — checks compliance with GOV.UK national requirements and the Central Lincolnshire Local Validation Lists (adopted May 2024)',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <span className="mt-0.5 shrink-0 text-teal-200">✓</span>
+                <span className="text-teal-50">{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-teal-200 border-t border-teal-500 pt-3">
+            Implemented specifically based on feedback from Julie Mason (Principal
+            Planning Officer) who described flood risk assessments that pass
+            validation by name but fail on content — and from Chris Harrison who
+            requested discharge of conditions document screening.
+          </p>
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
           <h2 className="text-xl font-bold text-slate-800 mb-4">What PILOT-AI does</h2>
           <ul className="list-disc pl-5 space-y-2 text-slate-700 mb-8">

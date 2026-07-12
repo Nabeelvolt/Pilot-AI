@@ -25,3 +25,15 @@ def get_history():
         .execute()
     )
     return result.data or []
+
+@router.get("/detect-constraints")
+async def detect_constraints(address: str):
+    """
+    Auto-detect site constraints from a UK address using free government open data.
+    No API key required. Uses Environment Agency, MHCLG Planning Data Platform,
+    Historic England, and postcodes.io.
+    """
+    from services.gis_service import auto_detect_constraints
+    if not address or len(address.strip()) < 5:
+        raise HTTPException(status_code=422, detail="Please provide a full address including postcode.")
+    return await auto_detect_constraints(address.strip())

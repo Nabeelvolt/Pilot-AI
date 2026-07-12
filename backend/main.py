@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from api.routes import applications, documents, health, keepalive
+from api.routes import applications, documents, health, keepalive, document_analysis
 from config import settings
 from seed import run_seed_if_empty
 
@@ -48,6 +48,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(keepalive.router, prefix="/api")
 app.include_router(documents.router, prefix="/api/documents")
 app.include_router(applications.router, prefix="/api/applications")
+app.include_router(document_analysis.router, prefix="/api/document-analysis")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

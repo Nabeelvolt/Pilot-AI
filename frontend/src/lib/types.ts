@@ -1,4 +1,5 @@
 export interface AnalysisRequest {
+  analysis_id?: string;
   application_ref?: string;
   site_address?: string;
   application_type: string;
