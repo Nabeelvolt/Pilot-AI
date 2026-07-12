@@ -30,52 +30,56 @@ async def upload_application_document(
     analysis_id: str = Form(...),
     document_category: str = Form(...),
 ):
-    """Upload a single application document PDF and extract its text."""
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=422, detail="Only PDF files supported.")
-
-    pdf_bytes = await file.read()
-    application_doc_id = str(uuid.uuid4())
-    supabase = get_supabase()
-
-    # Upload to Supabase Storage
-    storage_path = f"applications/{analysis_id}/{document_category}/{file.filename}"
-    supabase.storage.from_(settings.SUPABASE_STORAGE_BUCKET).upload(
-        path=storage_path,
-        file=pdf_bytes,
-        file_options={"content-type": "application/pdf", "upsert": "true"},
-    )
-
-    # Extract text in temp file
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp.write(pdf_bytes)
-        tmp_path = tmp.name
-
     try:
-        extracted_text, word_count = extract_document_text(tmp_path)
-    finally:
-        os.unlink(tmp_path)
+        """Upload a single application document PDF and extract its text."""
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(status_code=422, detail="Only PDF files supported.")
 
-    # Save record to Supabase
-    supabase.table("application_documents").insert({
-        "application_doc_id": application_doc_id,
-        "analysis_id": analysis_id,
-        "filename": file.filename,
-        "document_category": document_category,
-        "storage_path": storage_path,
-        "extracted_text": extracted_text[:50000],  # Supabase text limit safety
-        "word_count": word_count,
-        "upload_status": "extracted",
-    }).execute()
+        pdf_bytes = await file.read()
+        application_doc_id = str(uuid.uuid4())
+        supabase = get_supabase()
 
-    return {
-        "application_doc_id": application_doc_id,
-        "filename": file.filename,
-        "document_category": document_category,
-        "word_count": word_count,
-        "status": "extracted",
-        "message": f"Document uploaded and text extracted ({word_count} words). Ready for assessment."
-    }
+        # Upload to Supabase Storage
+        storage_path = f"applications/{analysis_id}/{document_category}/{file.filename}"
+        supabase.storage.from_(settings.SUPABASE_STORAGE_BUCKET).upload(
+            path=storage_path,
+            file=pdf_bytes,
+            file_options={"content-type": "application/pdf", "upsert": "true"},
+        )
+
+        # Extract text in temp file
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp.write(pdf_bytes)
+            tmp_path = tmp.name
+
+        try:
+            extracted_text, word_count = extract_document_text(tmp_path)
+        finally:
+            os.unlink(tmp_path)
+
+        # Save record to Supabase
+        supabase.table("application_documents").insert({
+            "application_doc_id": application_doc_id,
+            "analysis_id": analysis_id,
+            "filename": file.filename,
+            "document_category": document_category,
+            "storage_path": storage_path,
+            "extracted_text": extracted_text[:50000],  # Supabase text limit safety
+            "word_count": word_count,
+            "upload_status": "extracted",
+        }).execute()
+
+        return {
+            "application_doc_id": application_doc_id,
+            "filename": file.filename,
+            "document_category": document_category,
+            "word_count": word_count,
+            "status": "extracted",
+            "message": f"Document uploaded and text extracted ({word_count} words). Ready for assessment."
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 
 @router.post("/assess/{application_doc_id}")
