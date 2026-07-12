@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '@/lib/api';
 
 interface DocumentAssessment {
   doc_id: string;
@@ -44,7 +45,7 @@ export default function DocumentAdequacyPanel({ analysisId, applicationType, sit
       try {
         setLoading(true);
         // We'll call the endpoint that returns validation and assessments
-        const res = await fetch(`http://127.0.0.1:8000/api/document-analysis/${analysisId}`);
+        const res = await fetch(`${API_BASE}/document-analysis/${analysisId}`);
         if (res.ok) {
           const data = await res.json();
           setValidationResult(data.validation_results);
