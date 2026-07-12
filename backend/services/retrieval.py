@@ -65,6 +65,38 @@ def retrieve_chunks(
     return chunks
 
 
+import cohere
+import os
+
+co = cohere.Client(api_key=os.getenv("COHERE_API_KEY"))
+
+def rerank_chunks(query: str, chunks: List[dict], top_n: int = 5) -> List[dict]:
+    """
+    Use Cohere Re-Ranker to score relevance of retrieved chunks against the original query.
+    Returns the top_n chunks.
+    """
+    if not chunks:
+        return chunks
+    docs = [c["text"] for c in chunks]
+    try:
+        results = co.rerank(
+            model="rerank-english-v3.0",
+            query=query,
+            documents=docs,
+            top_n=top_n,
+        )
+        reranked = []
+        for r in results.results:
+            chunk = chunks[r.index].copy()
+            chunk["relevance"] = round(r.relevance_score, 3)
+            chunk["chunk_id"] = f"C{len(reranked)+1}"
+            reranked.append(chunk)
+        return reranked
+    except Exception as e:
+        logger.error(f"Cohere reranking error: {e}")
+        # Fallback to original chunks if reranking fails
+        return chunks[:top_n]
+
 def multi_query_retrieve(
     queries: List[str],
     top_k: int = 15,
@@ -82,6 +114,13 @@ def multi_query_retrieve(
                 seen[key] = chunk
 
     merged = sorted(seen.values(), key=lambda x: x["relevance"], reverse=True)
+    
+    # We retrieve more initially, then re-rank down to top_k
+    # Use the first query as the main semantic intent for re-ranking
+    main_query = queries[0] if queries else ""
+    if main_query and len(merged) > 0:
+        return rerank_chunks(main_query, merged[:30], top_n=top_k)
+    
     for i, chunk in enumerate(merged[:top_k]):
         chunk["chunk_id"] = f"C{i+1}"
     return merged[:top_k]

@@ -14,3 +14,4 @@ tiktoken==0.7.0
 python-multipart==0.0.9
 reportlab==4.2.2
 aiofiles==23.2.1
+cohere
