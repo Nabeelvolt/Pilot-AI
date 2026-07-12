@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE } from '@/lib/api';
 
 interface DocumentAssessment {
-  doc_id: string;
-  document_title: string;
-  doc_category: string;
-  is_adequate: boolean;
-  summary: string;
-  issues: string[];
+  assessment_id: string;
+  document_category: string;
+  overall_adequacy: string;
+  sections_present: string[];
+  sections_missing: string[];
+  policy_conflicts: string[];
+  recommendations: string[];
 }
 
 interface ValidationReq {
@@ -44,7 +45,6 @@ export default function DocumentAdequacyPanel({ analysisId, applicationType, sit
       if (!analysisId) return;
       try {
         setLoading(true);
-        // We'll call the endpoint that returns validation and assessments
         const res = await fetch(`${API_BASE}/document-analysis/${analysisId}`);
         if (res.ok) {
           const data = await res.json();
@@ -54,8 +54,6 @@ export default function DocumentAdequacyPanel({ analysisId, applicationType, sit
           setValidationResult(data.validation);
           setAssessments(data.assessments || []);
         } else {
-          // If the get endpoint doesn't exist yet, we might need to call validate?
-          // The prompt says GET /api/document-analysis/{analysis_id} should return both.
           setError('Failed to fetch document analysis data.');
         }
       } catch (e: any) {
@@ -107,50 +105,52 @@ export default function DocumentAdequacyPanel({ analysisId, applicationType, sit
       </div>
 
       {/* Validation Checklist Table */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold text-slate-800 mb-3">Validation Checklist</h3>
+      <h3 className="text-lg font-bold text-slate-800 mb-4">Validation Checklist</h3>
+      <div className="border border-slate-200 rounded-lg overflow-hidden mb-8">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-600 border border-slate-200 rounded-lg overflow-hidden">
-            <thead className="text-xs text-slate-700 bg-slate-50 border-b border-slate-200 uppercase">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th scope="col" className="px-4 py-3">Document</th>
-                <th scope="col" className="px-4 py-3">Requirement</th>
-                <th scope="col" className="px-4 py-3 text-center">Required</th>
-                <th scope="col" className="px-4 py-3 text-center">Submitted</th>
-                <th scope="col" className="px-4 py-3 text-center">Adequate</th>
+                <th className="py-3 px-4">DOCUMENT</th>
+                <th className="py-3 px-4">REQUIREMENT</th>
+                <th className="py-3 px-4 text-center">REQUIRED</th>
+                <th className="py-3 px-4 text-center">SUBMITTED</th>
+                <th className="py-3 px-4 text-center">ADEQUATE</th>
               </tr>
             </thead>
-            <tbody>
-              {validationResult.required_documents?.map((req, idx) => (
-                <tr key={idx} className="bg-white border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-800">
-                    {req.document_name}
-                    {req.notes && <p className="text-xs text-slate-500 font-normal mt-1">{req.notes}</p>}
+            <tbody className="divide-y divide-slate-100">
+              {validationResult.required_documents.map((req, idx) => (
+                <tr key={idx} className="hover:bg-slate-50">
+                  <td className="py-3 px-4">
+                    <div className="font-medium text-slate-800">{req.document_name}</div>
+                    {req.notes && <div className="text-xs text-slate-500 mt-1">{req.notes}</div>}
                   </td>
-                  <td className="px-4 py-3 text-xs">{req.requirement_type}</td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="py-3 px-4 text-slate-600">
+                    {req.requirement_type}
+                  </td>
+                  <td className="py-3 px-4 text-center">
                     {req.required ? (
                       <span className="text-green-600 font-bold">✓</span>
                     ) : (
                       <span className="text-slate-400 font-bold">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="py-3 px-4 text-center">
                     {req.required ? (
                       req.present ? (
                         <span className="text-green-600 font-bold">✓</span>
                       ) : (
-                        <span className="text-red-600 font-bold">✗</span>
+                        <span className="text-red-600 font-bold">X</span>
                       )
                     ) : (
                       <span className="text-slate-400 font-bold">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="py-3 px-4 text-center">
                     {req.required && req.present ? (
-                      req.adequate === true ? (
+                      req.adequate === true || req.adequate === 'ADEQUATE' ? (
                         <span className="text-green-600 font-bold">✓</span>
-                      ) : req.adequate === false ? (
+                      ) : req.adequate === false || req.adequate === 'INADEQUATE' ? (
                         <span className="text-amber-600 font-bold text-lg">!</span>
                       ) : (
                         <span className="text-slate-400 font-bold">-</span>
@@ -174,25 +174,29 @@ export default function DocumentAdequacyPanel({ analysisId, applicationType, sit
       ) : (
         <div className="space-y-4 mb-8">
           {assessments.map((assessment) => (
-            <div key={assessment.doc_id} className="border border-slate-200 rounded-lg p-4">
+            <div key={assessment.assessment_id} className="border border-slate-200 rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h4 className="font-semibold text-slate-800">{assessment.document_title}</h4>
-                  <span className="text-xs text-slate-500">{assessment.doc_category}</span>
+                  <h4 className="font-semibold text-slate-800">{assessment.document_category.replace(/_/g, ' ').toUpperCase()}</h4>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${assessment.is_adequate ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {assessment.is_adequate ? 'Adequate' : 'Issues Found'}
+                <span className={`px-2 py-1 rounded text-xs font-bold ${assessment.overall_adequacy === 'ADEQUATE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {assessment.overall_adequacy === 'ADEQUATE' ? 'Adequate' : 'Issues Found'}
                 </span>
               </div>
               
-              <p className="text-sm text-slate-600 mb-3">{assessment.summary}</p>
+              {assessment.recommendations && assessment.recommendations.length > 0 && (
+                <p className="text-sm text-slate-600 mb-3">{assessment.recommendations.join(" ")}</p>
+              )}
               
-              {assessment.issues && assessment.issues.length > 0 && (
+              {((assessment.sections_missing && assessment.sections_missing.length > 0) || (assessment.policy_conflicts && assessment.policy_conflicts.length > 0)) && (
                 <div className="bg-amber-50 p-3 rounded border border-amber-100">
                   <h5 className="text-xs font-semibold text-amber-800 mb-1">Identified Issues:</h5>
                   <ul className="list-disc pl-4 text-xs text-amber-700">
-                    {assessment.issues.map((issue, idx) => (
-                      <li key={idx}>{issue}</li>
+                    {assessment.sections_missing?.map((issue, idx) => (
+                      <li key={`missing-${idx}`}>Missing: {issue}</li>
+                    ))}
+                    {assessment.policy_conflicts?.map((issue, idx) => (
+                      <li key={`conflict-${idx}`}>Conflict: {issue}</li>
                     ))}
                   </ul>
                 </div>
